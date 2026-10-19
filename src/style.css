@@ -1863,3 +1863,426 @@ h3 {
     flex-direction: column;
   }
 }
+
+/* Adicione este bloco ao final do CSS global da aplicação. */
+.cash-register-panel {
+  padding: 1.35rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 1.1rem;
+  background: var(--card-background, #fff);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 4%);
+}
+
+.cash-register-heading,
+.cash-register-footer,
+.cash-history-modal-header,
+.cash-history-sale-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cash-register-heading {
+  margin-bottom: 1.25rem;
+}
+
+.cash-register-heading .sales-section-title {
+  align-items: flex-start;
+  margin: 0;
+}
+
+.cash-register-heading .sales-section-title h2,
+.cash-history-modal-header h2 {
+  margin: 0;
+}
+
+.cash-register-heading .sales-section-title .muted,
+.cash-history-modal-header .muted {
+  margin: 0.25rem 0 0;
+}
+
+.cash-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.cash-status-pill.is-open {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.cash-status-pill.is-closed {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+.cash-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.cash-register-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.cash-register-summary > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.85rem;
+  background: var(--subtle-background, #f8fafc);
+}
+
+.cash-register-summary span,
+.cash-history-modal-summary span {
+  color: var(--muted-color, #64748b);
+  font-size: 0.85rem;
+}
+
+.cash-register-summary strong {
+  color: var(--text-color, #0f172a);
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.cash-register-summary .cash-summary-total {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.cash-register-summary .cash-summary-total strong {
+  color: #15803d;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.cash-register-footer {
+  margin-top: 1rem;
+}
+
+.cash-register-footer .muted {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.cash-history-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  min-height: 2.65rem;
+  padding: 0.65rem 0.95rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 0.7rem;
+  color: var(--text-color, #0f172a);
+  background: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.cash-history-button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.cash-history-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cash-history-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(15 23 42 / 55%);
+  backdrop-filter: blur(4px);
+}
+
+.cash-history-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 700px);
+  max-height: min(88vh, 850px);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 60%);
+  border-radius: 1.15rem;
+  background: var(--card-background, #fff);
+  box-shadow: 0 24px 80px rgb(15 23 42 / 24%);
+}
+
+.cash-history-modal-header {
+  flex-shrink: 0;
+  padding: 1.35rem 1.4rem 1.1rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.cash-history-modal-header .eyebrow {
+  margin: 0 0 0.4rem;
+}
+
+.cash-history-modal-header h2 {
+  font-size: 1.35rem;
+}
+
+.cash-history-close {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 0.7rem;
+  color: #475569;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+
+.cash-history-close:hover {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.cash-history-modal-summary {
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 0.8rem;
+  padding: 1rem 1.4rem;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.cash-history-modal-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cash-history-modal-summary strong {
+  color: var(--text-color, #0f172a);
+  font-size: 1.15rem;
+}
+
+.cash-history-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.35rem 1.4rem;
+}
+
+.cash-history-sale {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.cash-history-sale:last-child {
+  border-bottom: 0;
+}
+
+.cash-history-sale-top > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cash-history-sale-top > div:first-child strong {
+  font-size: 1.1rem;
+  color: var(--text-color, #0f172a);
+}
+
+.cash-history-sale-top > div:first-child span {
+  color: var(--muted-color, #64748b);
+  font-size: 0.82rem;
+}
+
+.cash-history-payment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  color: #475569;
+  background: #f1f5f9;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.cash-history-items {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cash-history-items li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted-color, #64748b);
+  font-size: 0.86rem;
+}
+
+.cash-history-items li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cash-history-items li strong {
+  flex-shrink: 0;
+  color: var(--text-color, #334155);
+  font-weight: 600;
+}
+
+.cash-history-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card-background, #fff);
+}
+
+@media (max-width: 640px) {
+  .cash-register-panel {
+    padding: 1rem;
+  }
+
+  .cash-register-heading,
+  .cash-register-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cash-register-heading {
+    gap: 0.8rem;
+  }
+
+  .cash-status-pill {
+    align-self: flex-start;
+  }
+
+  .cash-register-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+  }
+
+  .cash-register-summary .cash-summary-total {
+    grid-column: 1 / -1;
+  }
+
+  .cash-register-summary > div {
+    padding: 0.85rem;
+  }
+
+  .cash-history-button {
+    width: 100%;
+  }
+
+  .cash-history-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .cash-history-modal {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 1.1rem 1.1rem 0 0;
+  }
+
+  .cash-history-modal-header,
+  .cash-history-modal-summary,
+  .cash-history-list,
+  .cash-history-modal-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .cash-history-sale-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Identificação do operador no início da sessão */
+.cash-operator-label {
+  margin: 0.45rem 0 0;
+  color: var(--muted-color, #64748b);
+  font-size: 0.9rem;
+}
+
+.cash-operator-label strong {
+  color: var(--text-color, #0f172a);
+}
+
+.operator-modal .eyebrow {
+  margin: 0 0 0.35rem;
+}
+
+.operator-modal h2 {
+  margin: 0 0 0.65rem;
+}
+
+.operator-modal > .muted {
+  margin: 0 0 1.2rem;
+  line-height: 1.55;
+}
+
+.operator-modal label {
+  display: block;
+  margin: 0 0 0.45rem;
+  font-weight: 600;
+}
+
+.operator-modal input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+}
+
+.operator-modal .cash-modal-actions .primary-button {
+  width: 100%;
+}
+
+.operator-modal-mark {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 1rem;
+  border-radius: 1rem;
+  color: #166534;
+  background: #dcfce7;
+}
+
+@media (max-width: 640px) {
+  .cash-register-heading,
+  .cash-register-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

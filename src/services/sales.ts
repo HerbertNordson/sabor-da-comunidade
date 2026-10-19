@@ -1,6 +1,5 @@
 import { supabase } from "../supabase";
 import type { PaymentMethod } from "../types";
-import { openCashRegister } from "./cashRegister";
 
 export interface SaleItemInput {
   product_id: string;
@@ -22,8 +21,6 @@ export async function createSale(
   if (items.length === 0) {
     throw new Error("Adicione pelo menos um produto à venda.");
   }
-
-  await openCashRegister();
 
   const { data, error } = await getClient().rpc("create_sale", {
     p_items: items,

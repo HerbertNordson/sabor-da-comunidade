@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 export interface CashRegisterSession {
   id: string;
   seller_id: string;
+  operator_name: string | null;
   status: "open" | "closed";
   opened_at: string;
   closed_at: string | null;
@@ -35,8 +36,20 @@ function getClient() {
   return supabase;
 }
 
-export async function openCashRegister(): Promise<string> {
-  const { data, error } = await getClient().rpc("open_cash_register");
+export async function openCashRegister(operatorName: string): Promise<string> {
+  const normalizedName = operatorName.trim();
+
+  if (!normalizedName) {
+    throw new Error("Informe o nome do operador do caixa.");
+  }
+
+  if (normalizedName.length > 120) {
+    throw new Error("O nome do operador deve ter no máximo 120 caracteres.");
+  }
+
+  const { data, error } = await getClient().rpc("open_cash_register", {
+    p_operator_name: normalizedName,
+  });
 
   if (error) {
     throw new Error(error.message || "Não foi possível abrir o caixa.");

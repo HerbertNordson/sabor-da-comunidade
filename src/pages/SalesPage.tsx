@@ -17,6 +17,7 @@ import { getProducts } from "../services/products";
 import { createSale } from "../services/sales";
 import {
   openCashRegister,
+  getOpenCashRegister,
   closeCashRegister,
   getCashRegisterSalesCount,
   type CashRegisterSession,
@@ -184,7 +185,7 @@ function CashHistoryModal({ sales, onClose }: CashHistoryModalProps) {
       >
         <header className="cash-history-modal-header">
           <div>
-            <p className="eyebrow">Sabor da Comunidade</p>
+            <p className="eyebrow">CANTINA MAPE</p>
             <h2 id="cash-history-title">Histórico de vendas</h2>
             <p className="muted">Todas as vendas registradas nesta sessão.</p>
           </div>
@@ -303,6 +304,9 @@ export default function SalesPage() {
   const [cashSalesCount, setCashSalesCount] = useState(0);
   const [cashLoading, setCashLoading] = useState(true);
   const [cashError, setCashError] = useState<string | null>(null);
+  const [showOperatorModal, setShowOperatorModal] = useState(false);
+  const [operatorName, setOperatorName] = useState("");
+  const [openingCash, setOpeningCash] = useState(false);
 
   const [showSaleConfirmation, setShowSaleConfirmation] = useState(false);
   const [showCashHistoryModal, setShowCashHistoryModal] = useState(false);
@@ -339,19 +343,32 @@ export default function SalesPage() {
         throw new Error("Supabase não configurado.");
       }
 
-      const sessionId = await openCashRegister();
+      const existingSession = await getOpenCashRegister();
 
-      const { data: sessionData, error: sessionError } = await supabase
-        .from("cash_register_sessions")
-        .select("*")
-        .eq("id", sessionId)
-        .single();
+      if (!existingSession) {
+        setCashSession(null);
+        setOperatorName("");
+        setShowOperatorModal(true);
+        setCashSales([]);
+        setCashSalesCount(0);
+        return;
+      }
 
-      if (sessionError) throw sessionError;
+      setCashSession(existingSession);
 
-      const session = sessionData as CashRegisterSession;
-      setCashSession(session);
+      if (!existingSession.operator_name?.trim()) {
+        setOperatorName("");
+        // Sessão criada antes da identificação do operador: solicitar o nome
+        // e preencher o campo apenas se ainda estiver vazio no banco.
+        setShowOperatorModal(true);
+        setCashSales([]);
+        setCashSalesCount(0);
+        return;
+      }
 
+      setOperatorName(existingSession.operator_name ?? "");
+
+      const session = existingSession;
       const count = await getCashRegisterSalesCount(session.id);
       setCashSalesCount(count);
 
@@ -500,6 +517,35 @@ export default function SalesPage() {
     }
   }
 
+  async function handleOpenCashRegister() {
+    const normalizedName = operatorName.trim();
+
+    if (!normalizedName) {
+      setCashError("Informe o nome do operador para abrir o caixa.");
+      return;
+    }
+
+    if (normalizedName.length > 120) {
+      setCashError("O nome do operador deve ter no máximo 120 caracteres.");
+      return;
+    }
+
+    setOpeningCash(true);
+    setCashError(null);
+
+    try {
+      await openCashRegister(normalizedName);
+      setShowOperatorModal(false);
+      await loadCashRegister();
+    } catch (err) {
+      setCashError(
+        err instanceof Error ? err.message : "Não foi possível abrir o caixa.",
+      );
+    } finally {
+      setOpeningCash(false);
+    }
+  }
+
   function requestLogout() {
     if (cashLoading) {
       setCashError("Aguarde a consulta do caixa antes de sair.");
@@ -564,6 +610,7 @@ export default function SalesPage() {
     const rows = [
       [
         "Venda",
+        "Operador do caixa",
         "Data",
         "Forma de pagamento",
         "Produto",
@@ -575,6 +622,7 @@ export default function SalesPage() {
       ...cashSales.flatMap((sale) =>
         sale.sale_items.map((item) => [
           sale.id,
+          cashSession?.operator_name || "Não identificado",
           new Date(sale.sold_at).toLocaleString("pt-BR"),
           paymentOptions.find((option) => option.value === sale.payment_method)
             ?.label ?? sale.payment_method,
@@ -614,8 +662,9 @@ export default function SalesPage() {
     if (!closure) return;
 
     const message = [
-      "*Fechamento de caixa* — Cantina MAPE - Sabor da Comunidade",
-      `Operador: ${profile?.full_name || "Não identificado"}`,
+      "Fechamento de caixa — Cantina MAPE",
+      `Operador do caixa: ${cashSession?.operator_name || "Não identificado"}`,
+      `Usuário autenticado: ${profile?.full_name || "Não identificado"}`,
       `Vendas: ${closure.sales_count}`,
       `Total vendido: ${formatCurrency(closure.total_sales)}`,
       `Dinheiro esperado: ${formatCurrency(closure.expected_cash)}`,
@@ -645,7 +694,7 @@ export default function SalesPage() {
               Voltar ao painel
             </Link>
           )}
-          <p className="eyebrow">Sabor da Comunidade</p>
+          <p className="eyebrow">CANTINA MAPE</p>
           <h1>Frente de caixa</h1>
           <p className="muted">
             Olá, {profile?.full_name || "Vendedor"}. Registre uma nova venda.
@@ -674,6 +723,12 @@ export default function SalesPage() {
             <div>
               <h2>Meu caixa de hoje</h2>
               <p className="muted">Resumo da sua sessão atual</p>
+              <p className="cash-operator-label">
+                Operador:{" "}
+                <strong>
+                  {cashSession?.operator_name || "Aguardando identificação"}
+                </strong>
+              </p>
             </div>
           </div>
           <span
@@ -914,6 +969,65 @@ export default function SalesPage() {
           sales={cashSales}
           onClose={() => setShowCashHistoryModal(false)}
         />
+      )}
+
+      {showOperatorModal && (
+        <div className="cash-modal-backdrop">
+          <section
+            className="cash-modal operator-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="operator-modal-title"
+          >
+            <div className="operator-modal-mark">
+              <Banknote size={26} />
+            </div>
+            <p className="eyebrow">CANTINA MAPE</p>
+            <h2 id="operator-modal-title">Identificação do operador</h2>
+            <p className="muted">
+              Antes de iniciar as vendas, informe o nome da pessoa que ficará
+              responsável por este caixa. Essa identificação ficará registrada
+              na sessão, independentemente do usuário conectado.
+            </p>
+
+            <label htmlFor="cash-operator-name">Nome do operador</label>
+            <input
+              id="cash-operator-name"
+              type="text"
+              value={operatorName}
+              onChange={(event) => setOperatorName(event.target.value)}
+              placeholder="Digite o nome completo"
+              maxLength={120}
+              autoComplete="name"
+              autoFocus
+              disabled={openingCash}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !openingCash) {
+                  void handleOpenCashRegister();
+                }
+              }}
+            />
+
+            {cashError && (
+              <p className="error-message" role="alert">
+                {cashError}
+              </p>
+            )}
+
+            <div className="cash-modal-actions">
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => void handleOpenCashRegister()}
+                disabled={openingCash || !operatorName.trim()}
+              >
+                {openingCash
+                  ? "Registrando operador..."
+                  : "Confirmar e abrir caixa"}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
 
       {showSaleConfirmation && (
