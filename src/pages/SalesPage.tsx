@@ -63,6 +63,7 @@ interface SaleConfirmationModalProps {
   total: number;
   paymentMethod: PaymentMethod;
   submitting: boolean;
+  error: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -72,6 +73,7 @@ function SaleConfirmationModal({
   total,
   paymentMethod,
   submitting,
+  error,
   onCancel,
   onConfirm,
 }: SaleConfirmationModalProps) {
@@ -122,6 +124,12 @@ function SaleConfirmationModal({
             <strong>{formatCurrency(total)}</strong>
           </div>
         </div>
+
+        {error && (
+          <p className="error-message modal-error" role="alert">
+            {error}
+          </p>
+        )}
 
         <div className="sale-modal-actions">
           <button
@@ -315,6 +323,9 @@ export default function SalesPage() {
   const [closureNotes, setClosureNotes] = useState("");
   const [closing, setClosing] = useState(false);
   const [closure, setClosure] = useState<CashRegisterClosure | null>(null);
+  const [csvDownloaded, setCsvDownloaded] = useState(false);
+  const [saleModalError, setSaleModalError] = useState<string | null>(null);
+  const [closeModalError, setCloseModalError] = useState<string | null>(null);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -348,7 +359,7 @@ export default function SalesPage() {
       if (!existingSession) {
         setCashSession(null);
         setOperatorName("");
-        setShowOperatorModal(true);
+        setShowOperatorModal(false);
         setCashSales([]);
         setCashSalesCount(0);
         return;
@@ -489,6 +500,7 @@ export default function SalesPage() {
     if (cart.length === 0 || submitting) return;
 
     setSubmitting(true);
+    setSaleModalError(null);
     setError(null);
     setSuccess(null);
 
@@ -503,11 +515,12 @@ export default function SalesPage() {
 
       setCart([]);
       setShowSaleConfirmation(false);
+      setSaleModalError(null);
       setSuccess(`Venda registrada com sucesso! Código: ${saleId}`);
 
       await Promise.all([loadProducts(), loadCashRegister()]);
     } catch (err) {
-      setError(
+      setSaleModalError(
         err instanceof Error
           ? err.message
           : "Não foi possível registrar a venda.",
@@ -559,10 +572,11 @@ export default function SalesPage() {
       return;
     }
 
-    if (cashSalesCount > 0) {
+    if (cashSalesCount > 0 && cashSession?.status === "open") {
       setCountedCash("");
       setClosureNotes("");
       setClosure(null);
+      setCloseModalError(null);
       setShowCloseModal(true);
       return;
     }
@@ -576,13 +590,14 @@ export default function SalesPage() {
     const amount = Number(countedCash.replace(",", "."));
 
     if (!countedCash.trim() || !Number.isFinite(amount) || amount < 0) {
-      setCashError(
+      setCloseModalError(
         "Informe o dinheiro contado, incluindo R$ 0,00 se necessário.",
       );
       return;
     }
 
     setClosing(true);
+    setCloseModalError(null);
     setCashError(null);
 
     try {
@@ -596,9 +611,11 @@ export default function SalesPage() {
       setCashSession((current) =>
         current ? { ...current, status: "closed" } : current,
       );
+
       setShowCloseModal(false);
+      setCloseModalError(null);
     } catch (err) {
-      setCashError(
+      setCloseModalError(
         err instanceof Error ? err.message : "Não foi possível fechar o caixa.",
       );
     } finally {
@@ -658,31 +675,63 @@ export default function SalesPage() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  async function shareClosureAndLogout() {
+  function handleDownloadClosureCsv() {
     if (!closure) return;
 
-    const message = [
-      "Fechamento de caixa — Cantina MAPE",
-      `Operador do caixa: ${cashSession?.operator_name || "Não identificado"}`,
-      `Usuário autenticado: ${profile?.full_name || "Não identificado"}`,
-      `Vendas: ${closure.sales_count}`,
-      `Total vendido: ${formatCurrency(closure.total_sales)}`,
-      `Dinheiro esperado: ${formatCurrency(closure.expected_cash)}`,
-      `Dinheiro contado: ${formatCurrency(closure.counted_cash)}`,
-      `Diferença: ${formatCurrency(closure.difference)}`,
-      "",
-      "O CSV detalhado foi baixado. Anexe o arquivo à conversa.",
-    ].join("\n");
-
     downloadCashCsv();
+    setCsvDownloaded(true);
+  }
 
-    window.open(
-      `https://wa.me/5571993314919?text=${encodeURIComponent(message)}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
+  async function handleShareClosure() {
+    if (!closure || !csvDownloaded) return;
+    if (!supabase) {
+      setCashError("Supabase não configurado.");
+      return;
+    }
 
-    await logout();
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        throw new Error(
+          "Não foi possível identificar o usuário autenticado. Tente novamente.",
+        );
+      }
+
+      const authenticatedUser =
+        user?.email ??
+        user?.user_metadata?.full_name ??
+        profile?.full_name ??
+        (user?.id ? `ID: ${user.id}` : "Não identificado");
+
+      const message = [
+        "Fechamento de caixa — Cantina MAPE",
+        `Operador do caixa: ${cashSession?.operator_name || "Não identificado"}`,
+        `Usuário autenticado: ${authenticatedUser}`,
+        `Vendas: ${closure.sales_count}`,
+        `Total vendido: ${formatCurrency(closure.total_sales)}`,
+        `Dinheiro esperado: ${formatCurrency(closure.expected_cash)}`,
+        `Dinheiro contado: ${formatCurrency(closure.counted_cash)}`,
+        `Diferença: ${formatCurrency(closure.difference)}`,
+        "",
+        "O CSV detalhado foi baixado. Anexe o arquivo à conversa.",
+      ].join("\n");
+
+      window.open(
+        `https://wa.me/5571993314919?text=${encodeURIComponent(message)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } catch (err) {
+      setCashError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível identificar o usuário autenticado.",
+      );
+    }
   }
 
   return (
@@ -731,12 +780,34 @@ export default function SalesPage() {
               </p>
             </div>
           </div>
-          <span
-            className={`cash-status-pill ${cashSession?.status === "open" ? "is-open" : "is-closed"}`}
-          >
-            <span className="cash-status-dot" />
-            {cashSession?.status === "open" ? "Caixa aberto" : "Caixa fechado"}
-          </span>
+          <div className="cash-register-status-actions">
+            <span
+              className={`cash-status-pill ${
+                cashSession?.status === "open" ? "is-open" : "is-closed"
+              }`}
+            >
+              <span className="cash-status-dot" />
+              {cashSession?.status === "open"
+                ? "Caixa aberto"
+                : "Caixa fechado"}
+            </span>
+
+            {cashSession?.status !== "open" && (
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => {
+                  setCashError(null);
+                  setOperatorName("");
+                  setShowOperatorModal(true);
+                }}
+                disabled={cashLoading || openingCash}
+              >
+                <Banknote size={17} />
+                Abrir caixa
+              </button>
+            )}
+          </div>
         </div>
 
         {cashLoading ? (
@@ -1036,7 +1107,11 @@ export default function SalesPage() {
           total={total}
           paymentMethod={paymentMethod}
           submitting={submitting}
-          onCancel={() => setShowSaleConfirmation(false)}
+          error={saleModalError}
+          onCancel={() => {
+            setShowSaleConfirmation(false);
+            setSaleModalError(null);
+          }}
           onConfirm={() => void handleSubmitSale()}
         />
       )}
@@ -1064,11 +1139,18 @@ export default function SalesPage() {
               step="0.01"
               inputMode="decimal"
               value={countedCash}
-              onChange={(event) => setCountedCash(event.target.value)}
+              onChange={(event) => {
+                setCountedCash(event.target.value);
+                setCloseModalError(null);
+              }}
               placeholder="0,00"
               disabled={closing}
             />
-
+            {closeModalError && (
+              <p className="error-message modal-error" role="alert">
+                {closeModalError}
+              </p>
+            )}
             <label htmlFor="closure-notes">Observações (opcional)</label>
             <textarea
               id="closure-notes"
@@ -1142,7 +1224,11 @@ export default function SalesPage() {
               <button
                 className="secondary-button"
                 type="button"
-                onClick={() => setClosure(null)}
+                onClick={() => {
+                  setClosure(null);
+                  setCsvDownloaded(false);
+                  setShowOperatorModal(false);
+                }}
               >
                 Permanecer na tela
               </button>
@@ -1150,9 +1236,26 @@ export default function SalesPage() {
               <button
                 className="primary-button"
                 type="button"
-                onClick={() => void shareClosureAndLogout()}
+                onClick={handleDownloadClosureCsv}
               >
-                Baixar CSV, compartilhar e sair
+                {csvDownloaded ? "Baixar CSV novamente" : "1. Baixar CSV"}
+              </button>
+
+              <button
+                className="primary-button"
+                type="button"
+                onClick={handleShareClosure}
+                disabled={!csvDownloaded}
+              >
+                2. Enviar resumo pelo WhatsApp
+              </button>
+
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void logout()}
+              >
+                Sair da conta
               </button>
             </div>
           </section>

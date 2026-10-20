@@ -2286,3 +2286,20 @@ h3 {
     flex-direction: column;
   }
 }
+.cash-register-status-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.modal-error {
+  margin: 16px 0;
+  padding: 12px 14px;
+  border: 1px solid #f3b4b4;
+  border-radius: 8px;
+  background: #fff1f1;
+  color: #b42318;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
