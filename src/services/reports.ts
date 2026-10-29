@@ -116,6 +116,7 @@ export function paymentMethodLabel(method: string): string {
     credit_card: "Cartão de crédito",
     debit_card: "Cartão de débito",
     other: "Outro",
+    on_credit: "A prazo",
   };
 
   return labels[method] ?? method;

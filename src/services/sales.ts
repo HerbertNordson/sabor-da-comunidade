@@ -17,6 +17,7 @@ function getClient() {
 export async function createSale(
   items: SaleItemInput[],
   paymentMethod: PaymentMethod,
+  customerName: string | null = null,
 ): Promise<string> {
   if (items.length === 0) {
     throw new Error("Adicione pelo menos um produto à venda.");
@@ -25,6 +26,7 @@ export async function createSale(
   const { data, error } = await getClient().rpc("create_sale", {
     p_items: items,
     p_payment_method: paymentMethod,
+    p_customer_name: customerName,
   });
 
   if (error) {

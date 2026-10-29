@@ -49,6 +49,7 @@ const paymentOptions: { value: PaymentMethod; label: string }[] = [
   { value: "credit_card", label: "Cartão de crédito" },
   { value: "debit_card", label: "Cartão de débito" },
   { value: "other", label: "Outro" },
+  { value: "on_credit", label: "A prazo" },
 ];
 
 function formatCurrency(value: number) {
@@ -62,6 +63,7 @@ interface SaleConfirmationModalProps {
   totalItems: number;
   total: number;
   paymentMethod: PaymentMethod;
+  customerName: string;
   submitting: boolean;
   error: string | null;
   onCancel: () => void;
@@ -72,6 +74,7 @@ function SaleConfirmationModal({
   totalItems,
   total,
   paymentMethod,
+  customerName,
   submitting,
   error,
   onCancel,
@@ -118,6 +121,13 @@ function SaleConfirmationModal({
             <span>Forma de pagamento</span>
             <strong>{paymentLabel}</strong>
           </div>
+
+          {paymentMethod === "on_credit" && (
+            <div>
+              <span>Comprador</span>
+              <strong>{customerName}</strong>
+            </div>
+          )}
 
           <div className="sale-modal-total">
             <span>Total da compra</span>
@@ -299,6 +309,7 @@ export default function SalesPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [customerName, setCustomerName] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -499,6 +510,12 @@ export default function SalesPage() {
   async function handleSubmitSale() {
     if (cart.length === 0 || submitting) return;
 
+    const normalizedCustomerName = customerName.trim().replace(/\s+/g, " ");
+    if (paymentMethod === "on_credit" && normalizedCustomerName.split(" ").filter(Boolean).length < 2) {
+      setSaleModalError("Informe o nome completo do comprador (nome e sobrenome) para venda a prazo.");
+      return;
+    }
+
     setSubmitting(true);
     setSaleModalError(null);
     setError(null);
@@ -511,9 +528,11 @@ export default function SalesPage() {
           quantity: item.quantity,
         })),
         paymentMethod,
+        paymentMethod === "on_credit" ? normalizedCustomerName : null,
       );
 
       setCart([]);
+      setCustomerName("");
       setShowSaleConfirmation(false);
       setSaleModalError(null);
       setSuccess(`Venda registrada com sucesso! Código: ${saleId}`);
@@ -999,6 +1018,24 @@ export default function SalesPage() {
             </select>
           </div>
 
+          {paymentMethod === "on_credit" && (
+            <div className="payment-field">
+              <label htmlFor="credit-customer-name">Nome completo do comprador</label>
+              <input
+                id="credit-customer-name"
+                type="text"
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                placeholder="Nome e sobrenome do comprador"
+                autoComplete="name"
+                maxLength={160}
+                disabled={submitting}
+                required
+              />
+              <small>O nome será vinculado à dívida no contas a receber.</small>
+            </div>
+          )}
+
           {error && (
             <p className="error-message" role="alert">
               {error}
@@ -1106,6 +1143,7 @@ export default function SalesPage() {
           totalItems={totalItems}
           total={total}
           paymentMethod={paymentMethod}
+          customerName={customerName.trim()}
           submitting={submitting}
           error={saleModalError}
           onCancel={() => {

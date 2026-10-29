@@ -8,6 +8,7 @@ import AdminPage from "./pages/AdminPage";
 import SalesPage from "./pages/SalesPage";
 import ProductsPage from "./pages/ProductsPage";
 import SalesHistoryPage from "./pages/SalesHistoryPage";
+import ReceivablesPage from "./pages/ReceivablesPage";
 
 function AppHome() {
   const { profile, loading, user } = useAuth();
@@ -52,6 +53,15 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <ProductsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/contas-a-receber"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <ReceivablesPage />
           </ProtectedRoute>
         }
       />

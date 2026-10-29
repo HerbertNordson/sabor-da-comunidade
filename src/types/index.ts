@@ -26,4 +26,5 @@ export type PaymentMethod =
   | "pix"
   | "credit_card"
   | "debit_card"
-  | "other";
+  | "other"
+  | "on_credit";

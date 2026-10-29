@@ -5,6 +5,7 @@ import {
   ShoppingCart,
   TrendingUp,
   RefreshCw,
+  Banknote,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -195,6 +196,14 @@ export default function AdminPage() {
             <span>
               <strong>Gerenciar produtos</strong>
               <small>Cadastro, preços e disponibilidade</small>
+            </span>
+          </Link>
+
+          <Link className="management-link" to="/admin/contas-a-receber">
+            <Banknote size={20} />
+            <span>
+              <strong>Contas a receber</strong>
+              <small>Controlar dívidas e registrar pagamentos</small>
             </span>
           </Link>
 
